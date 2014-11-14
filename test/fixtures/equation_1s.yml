@@ -1,0 +1,11 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  ua: 1
+  ub: 1
+  c: 1
+
+two:
+  ua: 1
+  ub: 1
+  c: 1

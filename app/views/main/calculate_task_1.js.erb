@@ -1,0 +1,40 @@
+$(document).ready(function(){
+    $('#chart_pane').empty()
+    $('#chart_pane2').empty()
+
+    var chart_params = <%= raw @chart_params.to_json %>;
+    var series = new Array();
+    for(var i = 0; i < chart_params.charts.length; i++){
+        series[i] = {
+            name: chart_params.charts[i].name,
+            type: 'spline',
+            marker: {
+                enabled: false
+            },
+            pointStart: chart_params.start,
+            pointInterval: chart_params.step,
+            shadow: true,
+            data: chart_params.charts[i].values
+        }
+    }
+    new Highcharts.Chart({
+        chart: {
+            renderTo: 'chart_pane',
+            zoomType: 'y'
+
+        },
+        title: { text: "Графики" },
+        tooltip:{
+            shared: true,
+            valueDecimals: 2,
+            headerFormat: '<span style="font-size: 10px"><b>X:</b> {point.key}</span><br/>'
+        },
+        xAxis: {
+            title: {text: 'x'}
+        },
+        yAxis: {
+            title: { text: 'u(x)'}
+        },
+        series: series
+    });
+});

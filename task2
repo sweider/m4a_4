@@ -1,0 +1,9 @@
+0. Read http://ad.cctpu.edu.ru/Math_method/math/12.htm#KonRazn
+1. Find Mi Ni using (2.44)
+2. Calculate c && d arrays. 2.45
+3. calculate y
+
+repeat while precision not reached.
+precision should be calculated as defference between previous and current loop values. should use different steps
+
+u2 - 5u1 + 6u = ex

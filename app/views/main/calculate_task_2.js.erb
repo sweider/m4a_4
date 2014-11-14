@@ -1,0 +1,74 @@
+$(document).ready(function(){
+    var chart_params = <%= raw @chart_params.to_json %>;
+    var charts = <%= raw @task_charts.to_json %>;
+    var task_series = new Array();
+    for(var i = 0; i < charts.length; i++){
+        task_series[i] = {
+            name: charts[i].name,
+            type: 'spline',
+            marker: {
+                enabled: false
+            },
+            pointStart: chart_params.start,
+            pointInterval: charts[i].step,
+            shadow: true,
+            data: charts[i].values
+        }
+    }
+    new Highcharts.Chart({
+        chart: {
+            renderTo: 'chart_pane2',
+            zoomType: 'y'
+        },
+        title: { text: "Задание" },
+        tooltip:{
+            shared: true,
+            valueDecimals: 2,
+            headerFormat: '<span style="font-size: 10px"><b>X:</b> {point.key}</span><br/>'
+        },
+        xAxis: {
+            title: {text: 'x'}
+        },
+        yAxis: {
+            title: { text: 'u(x)'}
+        },
+        series: task_series
+    });
+
+
+    var example_chart = <%= raw @exampleChart.to_json %>;
+    var example_series = new Array()
+    for(var i = 0; i < example_chart.charts.length; i++){
+        example_series[i] = {
+            name: example_chart.charts[i].name,
+            type: 'spline',
+            marker: {
+                enabled: false
+            },
+            pointStart: example_chart.start,
+            pointInterval: example_chart.charts[i].step,
+            shadow: true,
+            data: example_chart.charts[i].values
+        }
+    }
+
+    new Highcharts.Chart({
+        chart: {
+            renderTo: 'chart_pane',
+            zoomType: 'y'
+        },
+        title: { text: "Пример" },
+        tooltip:{
+            shared: true,
+            valueDecimals: 2,
+            headerFormat: '<span style="font-size: 10px"><b>X:</b> {point.key}</span><br/>'
+        },
+        xAxis: {
+            title: {text: 'x'}
+        },
+        yAxis: {
+            title: { text: 'u(x)'}
+        },
+        series: example_series
+    });
+});
