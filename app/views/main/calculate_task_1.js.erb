@@ -1,6 +1,9 @@
 $(document).ready(function(){
-    $('#chart_pane').empty()
-    $('#chart_pane2').empty()
+    $('.chart').remove();
+    $('<div/>', {
+        id: 'chart_pane',
+        class: 'chart'
+    }).appendTo($("#buttons_pane"))
 
     var chart_params = <%= raw @chart_params.to_json %>;
     var series = new Array();

@@ -48,32 +48,17 @@ class MainController < ApplicationController
     task_precision = 0.05
     taskSolver = MainHelper::Lab1Task2Solver.new(
         10, 0, 5, 1.5, 0, #step counts, a, ua, b, ub
-        ->(x) { 5 * (1 + Math.cos(x)**2) }, #Q(x)
-        ->(x) { Math.cos(x) }, #P(x)
-        ->(x) { 10 / (1 + 0.5 * x**2) } #F(x)
+        ->(x) { 8 / (11 + 0.25 * x**2) }, #5 * (1 + Math.cos(x)**2) }, #Q(x)
+        ->(x) { -0.5 + Math.sin(x) }, #Math.cos(x) }, #P(x)
+        ->(x) { 5 * (1 - x**2) }#10 / (1 + 0.5 * x**2) } #F(x)
     )
     self.fillArrayWithCharts(@task_charts, taskSolver, task_precision)
   end
 
   def calculate_task_4
-    a = 0.5, b = 1.5, ua = 1, ub = 1, steps = 150, k1 = 1, k2 = 10000
-    kx_a = ->(x){ (x >= a && x <= (b - a).to_f / 2) ? k1 : k2 }
-    kx_b = ->(x){ (x >= a && x <= (b - a).to_f / 2) ? k2 : k1 }
-    fx = ->(x){ 5 * Math.sin(x) }
-
-    solution_a = MainHelper::Lab1Task2Solver.new(
-      steps, a, ua, b, ub,
-      ->(*x){0}, ->(*x){0},
-      ->(x) { fx.call(x) /  kx_a.call(x) }
-    ).solve
-
-    solution_b = MainHelper::Lab1Task2Solver.new(
-        steps, a, ua, b, ub,
-        ->(*x){0}, ->(*x){0},
-        ->(x) { fx.call(x) /  kx_b.call(x) }
-    ).solve
-    @chart_params = { start: a, title:'10.4', charts: [{ name: 'k1 << k2', values: solution_a[:y], step: solution_a[:step] },
-                                                   { name: 'k2 << k1', values: solution_b[:y], step: solution_b[:step] }]}
+    task_4_helper = MainHelper::Lab1Task4Helper.new
+    @chart_params = { start: task_4_helper.a, title:'10.4', charts: []}
+    task_4_helper.fill_array_with_charts_for_p3(@chart_params[:charts])
   end
 
   protected

@@ -131,6 +131,74 @@ module MainHelper
     alias F getF
   end
 
+  class Lab1Task4Helper
+    attr_reader :a
+
+    def initialize
+      @a = 0.5
+    end
+
+    def fill_array_with_charts_for_p3(array)
+      @a = 0.5; b = 1.5; ua = 1; ub = 1; steps = 150;
+      fx = ->(x){ 5 * Math.sin(x) }
+
+      #здесь и далее <name>_<a>_<b> -- нумерация соответствующая номеру в задании. kx3_1_a -- к из задания 1 пункт а
+      k1_1_a = 1; k2_1_a = 10000
+      kx_1_a = ->(x){ (x >= a && x <= (b - @a).to_f / 2) ? k1_1_a : k2_1_a }
+      kx_1_b = ->(x){ (x >= a && x <= (b - @a).to_f / 2) ? k2_1_a : k1_1_a }
+
+      solution_1_a = MainHelper::Lab1Task2Solver.new(
+          steps, @a, ua, b, ub,
+          ->(*x){0}, ->(*x){0},
+          ->(x) { fx.call(x) /  kx_1_a.call(x) }
+      ).solve
+      solution_1_b = MainHelper::Lab1Task2Solver.new(
+          steps, @a, ua, b, ub,
+          ->(*x){0}, ->(*x){0},
+          ->(x) { fx.call(x) /  kx_1_b.call(x) }
+      ).solve
+
+      k1_2_a = 1; k2_2_a = 5; k3_2_a = 10;
+      condition_step = (b - @a).to_f / 3
+
+      kx_2_a = ->(x){ x <= @a + condition_step ? k1_2_a : (x <= @a + 2 * condition_step ? k2_2_a : k3_2_a) }
+      solution_2_a = MainHelper::Lab1Task2Solver.new(
+          steps, @a, ua, b, ub,
+          ->(*x){0}, ->(*x){0},
+          ->(x) { fx.call(x) /  kx_2_a.call(x) }
+      ).solve
+
+      kx_2_b = ->(x){ x <= @a + condition_step ? k3_2_a : (x <= @a + 2 * condition_step ? k2_2_a : k1_2_a) }
+      solution_2_b = MainHelper::Lab1Task2Solver.new(
+          steps, @a, ua, b, ub,
+          ->(*x){0}, ->(*x){0},
+          ->(x) { fx.call(x) /  kx_2_b.call(x) }
+      ).solve
+
+      k = 3
+      kx_2_c = ->(x){ x <= @a + condition_step || x > @a + 2 * condition_step ? k :  2 * k }
+      solution_2_c = MainHelper::Lab1Task2Solver.new(
+          steps, @a, ua, b, ub,
+          ->(*x){0}, ->(*x){0},
+          ->(x) { fx.call(x) /  kx_2_c.call(x) }
+      ).solve
+
+      kx_2_d = ->(x){ x <= a + condition_step || x > @a + 2 * condition_step ? 20 * k : k }
+      solution_2_d = MainHelper::Lab1Task2Solver.new(
+          steps, @a, ua, b, ub,
+          ->(*x){0}, ->(*x){0},
+          ->(x) { fx.call(x) /  kx_2_d.call(x) }
+      ).solve
+
+      array <<  { name: '3.1.a: k1 << k2', values: solution_1_a[:y], step: solution_1_a[:step] }
+      array <<  { name: '3.1.b: k2 << k1', values: solution_1_b[:y], step: solution_1_b[:step] }
+      array <<  { name: '3.2.a: k1<k2<k3', values: solution_2_a[:y], step: solution_2_a[:step] }
+      array <<  { name: '3.2.b: k1>k2>k3', values: solution_2_b[:y], step: solution_2_b[:step] }
+      array <<  { name: '3.2.c: k1=k,k2=2k,k3=k', values: solution_2_c[:y], step: solution_2_c[:step] }
+      array <<  { name: '3.2.d: k1=20k,k2=k,k3=20k', values: solution_2_d[:y], step: solution_2_d[:step] }
+    end
+  end
+
   def self.getBiggestDifferenceBetweenArraysElements(arr1, arr2)
     max_diff = 0
     (0..arr2.size - 1).each do |i|
@@ -139,5 +207,7 @@ module MainHelper
     end
     max_diff
   end
+
+
 
 end

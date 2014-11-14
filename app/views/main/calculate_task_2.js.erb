@@ -1,4 +1,10 @@
 $(document).ready(function(){
+    $('.chart').remove();
+    var example_chart_id = 'example_chart_pane';
+    var task_chart_id = 'task_chart_pane';
+    $('<div/>', { id: task_chart_id, class: 'chart' }).appendTo($("#buttons_pane"));
+    $('<div/>', { id: example_chart_id, class: 'chart' }).appendTo($("#buttons_pane"));
+
     var chart_params = <%= raw @chart_params.to_json %>;
     var charts = <%= raw @task_charts.to_json %>;
     var task_series = new Array();
@@ -6,6 +12,10 @@ $(document).ready(function(){
         task_series[i] = {
             name: charts[i].name,
             type: 'spline',
+            tooltip:{
+                valueDecimals: 2,
+                headerFormat: '<span style="font-size: 10px"><b>X:</b> {point.key}</span><br/>'
+            },
             marker: {
                 enabled: false
             },
@@ -17,15 +27,10 @@ $(document).ready(function(){
     }
     new Highcharts.Chart({
         chart: {
-            renderTo: 'chart_pane2',
+            renderTo: task_chart_id,
             zoomType: 'y'
         },
         title: { text: "Задание" },
-        tooltip:{
-            shared: true,
-            valueDecimals: 2,
-            headerFormat: '<span style="font-size: 10px"><b>X:</b> {point.key}</span><br/>'
-        },
         xAxis: {
             title: {text: 'x'}
         },
@@ -42,6 +47,11 @@ $(document).ready(function(){
         example_series[i] = {
             name: example_chart.charts[i].name,
             type: 'spline',
+            tooltip:{
+                shared: false,
+                valueDecimals: 2,
+                headerFormat: '<span style="font-size: 10px"><b>X:</b> {point.key}</span><br/>'
+            },
             marker: {
                 enabled: false
             },
@@ -54,15 +64,10 @@ $(document).ready(function(){
 
     new Highcharts.Chart({
         chart: {
-            renderTo: 'chart_pane',
+            renderTo: example_chart_id,
             zoomType: 'y'
         },
         title: { text: "Пример" },
-        tooltip:{
-            shared: true,
-            valueDecimals: 2,
-            headerFormat: '<span style="font-size: 10px"><b>X:</b> {point.key}</span><br/>'
-        },
         xAxis: {
             title: {text: 'x'}
         },

@@ -1,9 +1,11 @@
 $(document).ready(function(){
-    $('#chart_pane').empty()
-    $('#chart_pane2').empty()
+    $('.chart').remove();
+    var task_chart_id = 'task_chart_pane';
+    $('<div/>', { id: task_chart_id, class: 'chart' }).appendTo($("#buttons_pane"));
 
     var chart_params = <%= raw @chart_params.to_json %>;
     var series = new Array();
+
     for(var i = 0; i < chart_params.charts.length; i++){
         series[i] = {
             name: chart_params.charts[i].name,
@@ -11,24 +13,25 @@ $(document).ready(function(){
             marker: {
                 enabled: false
             },
+            tooltip:{
+                shared: false,
+                valueDecimals: 4,
+                headerFormat: '<span style="font-size: 10px"><b>X:</b> {point.key}</span><br/>'
+            },
             pointStart: chart_params.start,
             pointInterval: chart_params.step,
             shadow: true,
             data: chart_params.charts[i].values
         }
     }
+
     new Highcharts.Chart({
         chart: {
-            renderTo: 'chart_pane',
+            renderTo: task_chart_id,
             zoomType: 'y'
 
         },
         title: { text: chart_params.title },
-        tooltip:{
-            shared: true,
-            valueDecimals: 2,
-            headerFormat: '<span style="font-size: 10px"><b>X:</b> {point.key}</span><br/>'
-        },
         xAxis: {
             title: {text: 'x'}
         },
