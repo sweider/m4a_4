@@ -1,14 +1,15 @@
 $(document).ready(function(){
     $('.chart').remove();
-    var task_chart_id = 'task_chart_pane';
-    $('<div/>', { id: task_chart_id, class: 'chart' }).appendTo($("#buttons_pane"));
+    var task3_chart_id = 'task3_chart_pane';
+    var task4_chart_id = 'task4_chart_pane';
+    $('<div/>', { id: task3_chart_id, class: 'chart' }).appendTo($("#buttons_pane"));
+    $('<div/>', { id: task4_chart_id, class: 'chart' }).appendTo($("#buttons_pane"));
 
     var chart_params = <%= raw @chart_params.to_json %>;
-    var series = new Array();
-
-    for(var i = 0; i < chart_params.charts.length; i++){
-        series[i] = {
-            name: chart_params.charts[i].name,
+    var series_p3 = new Array();
+    for(var i = 0; i < chart_params.charts_p3.length; i++){
+        series_p3[i] = {
+            name: chart_params.charts_p3[i].name,
             type: 'spline',
             marker: {
                 enabled: false
@@ -21,23 +22,59 @@ $(document).ready(function(){
             pointStart: chart_params.start,
             pointInterval: chart_params.step,
             shadow: true,
-            data: chart_params.charts[i].values
+            data: chart_params.charts_p3[i].values
         }
     }
 
     new Highcharts.Chart({
         chart: {
-            renderTo: task_chart_id,
+            renderTo: task3_chart_id,
             zoomType: 'y'
 
         },
-        title: { text: chart_params.title },
+        title: { text: chart_params.title_p3 },
         xAxis: {
             title: {text: 'x'}
         },
         yAxis: {
             title: { text: 'u(x)'}
         },
-        series: series
+        series: series_p3
+    });
+
+    var series_p4 = new Array();
+    for(var i = 0; i < chart_params.charts_p4.length; i++){
+        series_p4[i] = {
+            name: chart_params.charts_p4[i].name,
+            type: 'spline',
+            marker: {
+                enabled: false
+            },
+            tooltip:{
+                shared: false,
+                valueDecimals: 4,
+                headerFormat: '<span style="font-size: 10px"><b>X:</b> {point.key}</span><br/>'
+            },
+            pointStart: chart_params.start,
+            pointInterval: chart_params.step,
+            shadow: true,
+            data: chart_params.charts_p4[i].values
+        }
+    }
+
+    new Highcharts.Chart({
+        chart: {
+            renderTo: task4_chart_id,
+            zoomType: 'y'
+
+        },
+        title: { text: chart_params.title_p4 },
+        xAxis: {
+            title: {text: 'x'}
+        },
+        yAxis: {
+            title: { text: 'u(x)'}
+        },
+        series: series_p4
     });
 });

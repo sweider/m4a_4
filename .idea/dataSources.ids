@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component name="dataSourceStorage">
-  <data-source source="LOCAL" name="Rails m4a_1: development" uuid="1c69f762-22d6-4780-83bb-8fd3ced3d416">
+  <data-source name="Rails m4a_1: development" uuid="1c69f762-22d6-4780-83bb-8fd3ced3d416">
     <database-info product="" version="" jdbc-version="" driver-name="" driver-version=""/>
   </data-source>
 </component>

@@ -57,8 +57,9 @@ class MainController < ApplicationController
 
   def calculate_task_4
     task_4_helper = MainHelper::Lab1Task4Helper.new
-    @chart_params = { start: task_4_helper.a, title:'10.4', charts: []}
-    task_4_helper.fill_array_with_charts_for_p3(@chart_params[:charts])
+    @chart_params = { start: task_4_helper.a, title_p3:'10.4.3', title_p4: ' 10.4.4', charts_p3: [], charts_p4: []}
+    task_4_helper.fill_array_with_charts_for_p3(@chart_params[:charts_p3])
+    task_4_helper.fill_array_with_charts_for_p4(@chart_params[:charts_p4])
   end
 
   protected

@@ -58,6 +58,41 @@ module MainHelper
     end
   end
 
+  class DeltaFunction
+
+    def initialize(x0, infinity_value)
+      @x0 = x0
+      @infinity_value = infinity_value
+      @delta = ->(x){ (x - 0).abs < 0.00000001 ? @infinity_value : 0.0 }
+    end
+    def value(x)
+      @delta.call(x - @x0)
+    end
+  end
+
+  class PointHeatSupplier
+    # @param x0 [Float] точка, в которую ставится источник тепла
+    # @param [Float] power мощность источника тепла
+    # @return [nil]
+    def initialize(x0, power)
+      @delta_func = DeltaFunction.new(x0, 100000)
+      @power = power
+      @x0 = x0
+    end
+
+    # @param [Float] x точка, для которой хотим получить значение функции
+    # @return [Float] значение функции точечного источника тепла в заданной точке
+    def value(x)
+      @power * @delta_func.value(x)
+    end
+
+    # @param [Float] power новая мощность
+    # @return [PointHeatSupplier] новый источник тепла в той же точке с новой мощностью
+    def change_power(power)
+      PointHeatSupplier.new(@x0, power)
+    end
+  end
+
   class Lab1Task2Solver
     def initialize(steps_count,a,ua,b,ub, qx, px, fx)
       @a = a #0
@@ -135,42 +170,41 @@ module MainHelper
     attr_reader :a
 
     def initialize
-      @a = 0.5
+      @a = 0.5;  @b = 1.5; @ua = @ub = 1; @steps = 150;
     end
 
     def fill_array_with_charts_for_p3(array)
-      @a = 0.5; b = 1.5; ua = 1; ub = 1; steps = 150;
       fx = ->(x){ 5 * Math.sin(x) }
 
       #здесь и далее <name>_<a>_<b> -- нумерация соответствующая номеру в задании. kx3_1_a -- к из задания 1 пункт а
       k1_1_a = 1; k2_1_a = 10000
-      kx_1_a = ->(x){ (x >= a && x <= (b - @a).to_f / 2) ? k1_1_a : k2_1_a }
-      kx_1_b = ->(x){ (x >= a && x <= (b - @a).to_f / 2) ? k2_1_a : k1_1_a }
+      kx_1_a = ->(x){ (x >= a && x <= (@b - @a).to_f / 2) ? k1_1_a : k2_1_a }
+      kx_1_b = ->(x){ (x >= a && x <= (@b - @a).to_f / 2) ? k2_1_a : k1_1_a }
 
       solution_1_a = MainHelper::Lab1Task2Solver.new(
-          steps, @a, ua, b, ub,
+          @steps, @a, @ua, @b, @ub,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx.call(x) /  kx_1_a.call(x) }
       ).solve
       solution_1_b = MainHelper::Lab1Task2Solver.new(
-          steps, @a, ua, b, ub,
+          @steps, @a, @ua, @b, @ub,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx.call(x) /  kx_1_b.call(x) }
       ).solve
 
       k1_2_a = 1; k2_2_a = 5; k3_2_a = 10;
-      condition_step = (b - @a).to_f / 3
+      condition_step = (@b - @a).to_f / 3
 
       kx_2_a = ->(x){ x <= @a + condition_step ? k1_2_a : (x <= @a + 2 * condition_step ? k2_2_a : k3_2_a) }
       solution_2_a = MainHelper::Lab1Task2Solver.new(
-          steps, @a, ua, b, ub,
+          @steps, @a, @ua, @b, @ub,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx.call(x) /  kx_2_a.call(x) }
       ).solve
 
       kx_2_b = ->(x){ x <= @a + condition_step ? k3_2_a : (x <= @a + 2 * condition_step ? k2_2_a : k1_2_a) }
       solution_2_b = MainHelper::Lab1Task2Solver.new(
-          steps, @a, ua, b, ub,
+          @steps, @a, @ua, @b, @ub,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx.call(x) /  kx_2_b.call(x) }
       ).solve
@@ -178,14 +212,14 @@ module MainHelper
       k = 3
       kx_2_c = ->(x){ x <= @a + condition_step || x > @a + 2 * condition_step ? k :  2 * k }
       solution_2_c = MainHelper::Lab1Task2Solver.new(
-          steps, @a, ua, b, ub,
+          @steps, @a, @ua, @b, @ub,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx.call(x) /  kx_2_c.call(x) }
       ).solve
 
       kx_2_d = ->(x){ x <= a + condition_step || x > @a + 2 * condition_step ? 20 * k : k }
       solution_2_d = MainHelper::Lab1Task2Solver.new(
-          steps, @a, ua, b, ub,
+          @steps, @a, @ua, @b, @ub,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx.call(x) /  kx_2_d.call(x) }
       ).solve
@@ -196,6 +230,39 @@ module MainHelper
       array <<  { name: '3.2.b: k1>k2>k3', values: solution_2_b[:y], step: solution_2_b[:step] }
       array <<  { name: '3.2.c: k1=k,k2=2k,k3=k', values: solution_2_c[:y], step: solution_2_c[:step] }
       array <<  { name: '3.2.d: k1=20k,k2=k,k3=20k', values: solution_2_d[:y], step: solution_2_d[:step] }
+    end
+
+    # Заполняет массив хэшами графиков, для задания 10.4.4
+    def fill_array_with_charts_for_p4(array)
+      power = 1
+      supplier_a = PointHeatSupplier.new(@a + (@b - @a) / 2, power)
+      fx_a = ->(x) { supplier_a.value(x) }
+      solution_a = MainHelper::Lab1Task2Solver.new(
+          @steps, @a, @ua, @b, @ub,
+          ->(*x){0}, ->(*x){0},
+          ->(x) { fx_a.call(x)}
+      ).solve
+
+      supplier_b1 = PointHeatSupplier.new(@a + (@b - @a) / 3, power)
+      supplier_b2 = PointHeatSupplier.new(@a + 2 * (@b - @a) / 3, power)
+      fx_b = ->(x) {supplier_b1.value(x) + supplier_b2.value(x) }
+      solution_b = MainHelper::Lab1Task2Solver.new(
+          @steps, @a, @ua, @b, @ub,
+          ->(*x){0}, ->(*x){0},
+          ->(x) { fx_b.call(x) }
+      ).solve
+
+      supplier_c1 = supplier_b1.change_power(2 * power)
+      fx_c = ->(x) { supplier_c1.value(x) + supplier_b2.value(x) }
+      solution_c = MainHelper::Lab1Task2Solver.new(
+          @steps, @a, @ua, @b, @ub,
+          ->(*x){0}, ->(*x){0},
+          ->(x) { fx_c.call(x) }
+      ).solve
+
+      array <<  { name: 'Один источник в центре', values: solution_a[:y], step: solution_a[:step] }
+      array <<  { name: 'Два симметричных равномощных', values: solution_b[:y], step: solution_b[:step] }
+      array <<  { name: 'Два симметричных разномощных', values: solution_c[:y], step: solution_c[:step] }
     end
   end
 
