@@ -94,7 +94,8 @@ module MainHelper
   end
 
   class Lab1Task2Solver
-    def initialize(steps_count,a,ua,b,ub, qx, px, fx)
+    def initialize(steps_count,a,ua,b,ub,alpha0, alpha1, beta0,beta1, qx, px, fx)
+      @alpha0 = alpha0; @alpha1 = alpha1; @beta0 = beta0; @beta1 = beta1;
       @a = a #0
       @b = b # 1.5
       @ua = ua # 5
@@ -112,24 +113,27 @@ module MainHelper
     end
 
     def solve
-      @y[@steps_count - 1] = @ub
-      (@steps_count - 2).downto(1).each { |i|
+      @y[@steps_count] = (2 * @ub * @h - @beta1 * (@d[@steps_count] - @c[@steps_count - 1] * @d[@steps_count - 1])) /
+                          (2 * @beta0 * @h + @beta1* (@c[@steps_count - 1] - (1 / @c[@steps_count])))
+          #(@beta1 * @c[@steps_count - 2] * @d[@steps_count - 2] + @ub * @h) /
+           #              (@beta1 * (1 + @c[@steps_count - 2]) + @beta0 * @h) #@ub
+      (@steps_count - 1).downto(1).each { |i|
         @y[i] = @c[i] * (@d[i] - @y[i + 1])
       }
-      @y[0] = @ua
+      @y[0] = (@ua * @h - @alpha1 * @y[1]) / (@alpha0 * @h - @alpha1)#(@alpha1 * @y[1] - @ua * @h) / (@alpha1 - @alpha0 * @h)#@ua
       {step: @h, y: @y}
     end
 
     protected
     def initialize_coefficients_arrays
       @h = (@b - @a).to_f / @steps_count
-      @m = [@steps_count]
-      @n = [@steps_count]
-      @c = [@steps_count]
-      @d = [@steps_count]
-      @y = [@steps_count]
+      @m = [@steps_count + 1]
+      @n = [@steps_count + 1]
+      @c = [@steps_count + 1]
+      @d = [@steps_count + 1]
+      @y = [@steps_count + 1]
 
-      (0..(@steps_count - 1)).each do |i|
+      (0..(@steps_count)).each do |i|
         x = X(i)
         pi = @px.call(x)
         @m[i] = (2 * @qx.call(x) * @h**2 - 4) / (2 + @h * pi)
@@ -139,8 +143,9 @@ module MainHelper
           @c[i] = 1 / (@m[i] - @n[i] * @c[i - 1])
           @d[i] = (2 * @fx.call(x) * @h**2) / (2 + @h * pi) - @n[i] * @c[i-1] * @d[i-1]
         else
-          @c[i] = 1 / @m[i]
-          @d[i] = -1 * @n[i] * @ua + @fx.call(x) * @h**2
+          var = (@alpha1 - @alpha0 * @h)
+          @c[i] = var / (@m[i] * var + @n[i] * @alpha1) #1 / @m[i]
+          @d[i] = 2 * @fx.call(x) * @h**2 / (2 + pi * @h) + @n[i] * @ua * @h / var #@n[i] * @ub * @h / var + @fx.call(x) * @h**2 #-1 * @n[i] * @ua + @fx.call(x) * @h**2
         end
       end
     end
@@ -171,6 +176,7 @@ module MainHelper
 
     def initialize
       @a = 0.5;  @b = 1.5; @ua = @ub = 1; @steps = 150;
+      @alpha1 = 0; @alpha0 = 1; @beta1 = 0; @beta0 = 1;
     end
 
     def fill_array_with_charts_for_p3(array)
@@ -182,12 +188,12 @@ module MainHelper
       kx_1_b = ->(x){ (x >= a && x <= (@b - @a).to_f / 2) ? k2_1_a : k1_1_a }
 
       solution_1_a = MainHelper::Lab1Task2Solver.new(
-          @steps, @a, @ua, @b, @ub,
+          @steps, @a, @ua, @b, @ub, @alpha0, @alpha1, @beta0, @beta1,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx.call(x) /  kx_1_a.call(x) }
       ).solve
       solution_1_b = MainHelper::Lab1Task2Solver.new(
-          @steps, @a, @ua, @b, @ub,
+          @steps, @a, @ua, @b, @ub, @alpha0, @alpha1, @beta0, @beta1,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx.call(x) /  kx_1_b.call(x) }
       ).solve
@@ -197,14 +203,14 @@ module MainHelper
 
       kx_2_a = ->(x){ x <= @a + condition_step ? k1_2_a : (x <= @a + 2 * condition_step ? k2_2_a : k3_2_a) }
       solution_2_a = MainHelper::Lab1Task2Solver.new(
-          @steps, @a, @ua, @b, @ub,
+          @steps, @a, @ua, @b, @ub, @alpha0, @alpha1, @beta0, @beta1,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx.call(x) /  kx_2_a.call(x) }
       ).solve
 
       kx_2_b = ->(x){ x <= @a + condition_step ? k3_2_a : (x <= @a + 2 * condition_step ? k2_2_a : k1_2_a) }
       solution_2_b = MainHelper::Lab1Task2Solver.new(
-          @steps, @a, @ua, @b, @ub,
+          @steps, @a, @ua, @b, @ub, @alpha0, @alpha1, @beta0, @beta1,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx.call(x) /  kx_2_b.call(x) }
       ).solve
@@ -212,14 +218,14 @@ module MainHelper
       k = 3
       kx_2_c = ->(x){ x <= @a + condition_step || x > @a + 2 * condition_step ? k :  2 * k }
       solution_2_c = MainHelper::Lab1Task2Solver.new(
-          @steps, @a, @ua, @b, @ub,
+          @steps, @a, @ua, @b, @ub, @alpha0, @alpha1, @beta0, @beta1,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx.call(x) /  kx_2_c.call(x) }
       ).solve
 
       kx_2_d = ->(x){ x <= a + condition_step || x > @a + 2 * condition_step ? 20 * k : k }
       solution_2_d = MainHelper::Lab1Task2Solver.new(
-          @steps, @a, @ua, @b, @ub,
+          @steps, @a, @ua, @b, @ub, @alpha0, @alpha1, @beta0, @beta1,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx.call(x) /  kx_2_d.call(x) }
       ).solve
@@ -238,7 +244,7 @@ module MainHelper
       supplier_a = PointHeatSupplier.new(@a + (@b - @a) / 2, power)
       fx_a = ->(x) { supplier_a.value(x) }
       solution_a = MainHelper::Lab1Task2Solver.new(
-          @steps, @a, @ua, @b, @ub,
+          @steps, @a, @ua, @b, @ub, @alpha0, @alpha1, @beta0, @beta1,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx_a.call(x)}
       ).solve
@@ -247,7 +253,7 @@ module MainHelper
       supplier_b2 = PointHeatSupplier.new(@a + 2 * (@b - @a) / 3, power)
       fx_b = ->(x) {supplier_b1.value(x) + supplier_b2.value(x) }
       solution_b = MainHelper::Lab1Task2Solver.new(
-          @steps, @a, @ua, @b, @ub,
+          @steps, @a, @ua, @b, @ub, @alpha0, @alpha1, @beta0, @beta1,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx_b.call(x) }
       ).solve
@@ -255,7 +261,7 @@ module MainHelper
       supplier_c1 = supplier_b1.change_power(2 * power)
       fx_c = ->(x) { supplier_c1.value(x) + supplier_b2.value(x) }
       solution_c = MainHelper::Lab1Task2Solver.new(
-          @steps, @a, @ua, @b, @ub,
+          @steps, @a, @ua, @b, @ub, @alpha0, @alpha1, @beta0, @beta1,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx_c.call(x) }
       ).solve

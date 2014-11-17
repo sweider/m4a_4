@@ -39,7 +39,7 @@ class MainController < ApplicationController
   def calculate_task_2
     @exampleChart = { start: 0, end: 1, charts: []}
     exampleExact = MainHelper::Function.new(->(x) { Math.exp(-x) * ((2 * Math.exp(1) - 1) * x + 1) })
-    exampleSolver = MainHelper::Lab1Task2Solver.new( 10, 0, 1, 1, 2, ->(*x){ 1 }, ->(*x){ 2 }, ->(*x) { 0 } )
+    exampleSolver = MainHelper::Lab1Task2Solver.new( 10, 0, 1, 1, 2, 1, 0 , 1, 0, ->(*x){ 1 }, ->(*x){ 2 }, ->(*x) { 0 } )
     @exampleChart[:charts] << { values: exampleExact.getValuesInRangeWithStep(@exampleChart[:start]..@exampleChart[:end], 0.05), name: 'Exact', step: 0.05 }
     self.fillArrayWithCharts(@exampleChart[:charts], exampleSolver, 0.01)
 
@@ -47,7 +47,7 @@ class MainController < ApplicationController
     @chart_params = { start: 0, end: 1.5, step: 0.1}
     task_precision = 0.05
     taskSolver = MainHelper::Lab1Task2Solver.new(
-        10, 0, 5, 1.5, 0, #step counts, a, ua, b, ub
+        10, 0, 5, 1.5, 0, 1, 0 , 1, 0, #step counts, a, ua, b, ub, alpha0, alpha1, beta0 ,beta 1
         ->(x) { 8 / (11 + 0.25 * x**2) }, #5 * (1 + Math.cos(x)**2) }, #Q(x)
         ->(x) { -0.5 + Math.sin(x) }, #Math.cos(x) }, #P(x)
         ->(x) { 5 * (1 - x**2) }#10 / (1 + 0.5 * x**2) } #F(x)
