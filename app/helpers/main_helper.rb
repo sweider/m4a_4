@@ -4,7 +4,7 @@ module MainHelper
     attr_accessor :c, :c1, :c2
 
     def initialize(c, ua, ub, a, b)
-      @c = c;
+      @c = c
       @c1 = (4 * c * (ub - ua) - 5 * ( Math.sin(2 * b) - Math.sin(2 * a))) / (4 * (Math.sin(a) - Math.sin(b)))
       @c2 = ua - 1 / c * (5/4 * Math.sin(2 * a) + a - c1 * Math.sin(a))
     end
@@ -13,7 +13,7 @@ module MainHelper
       (1 / self.c) * (5 / 4 * Math.sin(2 * x) + x - self.c1 * Math.sin(x)) + self.c2
     end
 
-    def calculateInRangeWithStep(range, step)
+    def calculate_in_range_with_step(range, step)
       result = []
       range.step(step).each { |currentX| result << self.calculate(currentX) }
       result
@@ -33,7 +33,7 @@ module MainHelper
       5 / self.c * x - self.c1 / self.c * var(x)
     end
 
-    def calculateInRangeWithStep(range, step)
+    def calculate_in_range_with_step(range, step)
       result = []
       range.step(step).each { |currentX| result << self.calculate(currentX) }
       result
@@ -51,7 +51,7 @@ module MainHelper
       @func = function
     end
 
-    def getValuesInRangeWithStep(range, step)
+    def get_values_in_range_with_step(range, step)
       result = []
       range.step(step).each { |currentX| result << @func.call(currentX) }
       result
@@ -93,7 +93,7 @@ module MainHelper
     end
   end
 
-  class Lab1Task2Solver
+  class FiniteDifferenceSolver
     def initialize(steps_count,a,ua,b,ub,alpha0, alpha1, beta0,beta1, qx, px, fx)
       @alpha0 = alpha0; @alpha1 = alpha1; @beta0 = beta0; @beta1 = beta1;
       @a = a #0
@@ -139,7 +139,7 @@ module MainHelper
         @m[i] = (2 * @qx.call(x) * @h**2 - 4) / (2 + @h * pi)
         @n[i] = (2 - @h * pi) / (2 + @h * pi)
 
-        if (i > 1)
+        if i > 1
           @c[i] = 1 / (@m[i] - @n[i] * @c[i - 1])
           @d[i] = (2 * @fx.call(x) * @h**2) / (2 + @h * pi) - @n[i] * @c[i-1] * @d[i-1]
         else
@@ -150,33 +150,33 @@ module MainHelper
       end
     end
 
-    def getXForCurrentStep(i)
+    def get_x_for_current_step(i)
       @a + i * @h
     end
-    alias X getXForCurrentStep
+    alias X get_x_for_current_step
 
-    def getQ(x)
+    def get_q(x)
       5 * (1 + Math.cos(x)**2)
     end
-    alias Q getQ
+    alias Q get_q
 
-    def getP(x)
+    def get_p(x)
       Math.cos(x)
     end
-    alias P getP
+    alias P get_p
 
-    def getF(x)
+    def get_f(x)
       10 / (1 + 0.5 * x**2)
     end
-    alias F getF
+    alias F get_f
   end
 
   class Lab1Task4Helper
     attr_reader :a
 
     def initialize
-      @a = 0.5;  @b = 1.5; @ua = @ub = 1; @steps = 150;
-      @alpha1 = 0; @alpha0 = 1; @beta1 = 0; @beta0 = 1;
+      @a = 0.5;  @b = 1.5; @ua = @ub = 1; @steps = 150
+      @alpha1 = 0; @alpha0 = 1; @beta1 = 0; @beta0 = 1
     end
 
     def fill_array_with_charts_for_p3(array)
@@ -187,29 +187,29 @@ module MainHelper
       kx_1_a = ->(x){ (x >= a && x <= (@b - @a).to_f / 2) ? k1_1_a : k2_1_a }
       kx_1_b = ->(x){ (x >= a && x <= (@b - @a).to_f / 2) ? k2_1_a : k1_1_a }
 
-      solution_1_a = MainHelper::Lab1Task2Solver.new(
+      solution_1_a = MainHelper::FiniteDifferenceSolver.new(
           @steps, @a, @ua, @b, @ub, @alpha0, @alpha1, @beta0, @beta1,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx.call(x) /  kx_1_a.call(x) }
       ).solve
-      solution_1_b = MainHelper::Lab1Task2Solver.new(
+      solution_1_b = MainHelper::FiniteDifferenceSolver.new(
           @steps, @a, @ua, @b, @ub, @alpha0, @alpha1, @beta0, @beta1,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx.call(x) /  kx_1_b.call(x) }
       ).solve
 
-      k1_2_a = 1; k2_2_a = 5; k3_2_a = 10;
+      k1_2_a = 1; k2_2_a = 5; k3_2_a = 10
       condition_step = (@b - @a).to_f / 3
 
       kx_2_a = ->(x){ x <= @a + condition_step ? k1_2_a : (x <= @a + 2 * condition_step ? k2_2_a : k3_2_a) }
-      solution_2_a = MainHelper::Lab1Task2Solver.new(
+      solution_2_a = MainHelper::FiniteDifferenceSolver.new(
           @steps, @a, @ua, @b, @ub, @alpha0, @alpha1, @beta0, @beta1,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx.call(x) /  kx_2_a.call(x) }
       ).solve
 
       kx_2_b = ->(x){ x <= @a + condition_step ? k3_2_a : (x <= @a + 2 * condition_step ? k2_2_a : k1_2_a) }
-      solution_2_b = MainHelper::Lab1Task2Solver.new(
+      solution_2_b = MainHelper::FiniteDifferenceSolver.new(
           @steps, @a, @ua, @b, @ub, @alpha0, @alpha1, @beta0, @beta1,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx.call(x) /  kx_2_b.call(x) }
@@ -217,14 +217,14 @@ module MainHelper
 
       k = 3
       kx_2_c = ->(x){ x <= @a + condition_step || x > @a + 2 * condition_step ? k :  2 * k }
-      solution_2_c = MainHelper::Lab1Task2Solver.new(
+      solution_2_c = MainHelper::FiniteDifferenceSolver.new(
           @steps, @a, @ua, @b, @ub, @alpha0, @alpha1, @beta0, @beta1,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx.call(x) /  kx_2_c.call(x) }
       ).solve
 
       kx_2_d = ->(x){ x <= a + condition_step || x > @a + 2 * condition_step ? 20 * k : k }
-      solution_2_d = MainHelper::Lab1Task2Solver.new(
+      solution_2_d = MainHelper::FiniteDifferenceSolver.new(
           @steps, @a, @ua, @b, @ub, @alpha0, @alpha1, @beta0, @beta1,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx.call(x) /  kx_2_d.call(x) }
@@ -243,7 +243,7 @@ module MainHelper
       power = 1
       supplier_a = PointHeatSupplier.new(@a + (@b - @a) / 2, power)
       fx_a = ->(x) { supplier_a.value(x) }
-      solution_a = MainHelper::Lab1Task2Solver.new(
+      solution_a = MainHelper::FiniteDifferenceSolver.new(
           @steps, @a, @ua, @b, @ub, @alpha0, @alpha1, @beta0, @beta1,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx_a.call(x)}
@@ -252,7 +252,7 @@ module MainHelper
       supplier_b1 = PointHeatSupplier.new(@a + (@b - @a) / 3, power)
       supplier_b2 = PointHeatSupplier.new(@a + 2 * (@b - @a) / 3, power)
       fx_b = ->(x) {supplier_b1.value(x) + supplier_b2.value(x) }
-      solution_b = MainHelper::Lab1Task2Solver.new(
+      solution_b = MainHelper::FiniteDifferenceSolver.new(
           @steps, @a, @ua, @b, @ub, @alpha0, @alpha1, @beta0, @beta1,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx_b.call(x) }
@@ -260,7 +260,7 @@ module MainHelper
 
       supplier_c1 = supplier_b1.change_power(2 * power)
       fx_c = ->(x) { supplier_c1.value(x) + supplier_b2.value(x) }
-      solution_c = MainHelper::Lab1Task2Solver.new(
+      solution_c = MainHelper::FiniteDifferenceSolver.new(
           @steps, @a, @ua, @b, @ub, @alpha0, @alpha1, @beta0, @beta1,
           ->(*x){0}, ->(*x){0},
           ->(x) { fx_c.call(x) }
@@ -280,7 +280,5 @@ module MainHelper
     end
     max_diff
   end
-
-
 
 end
