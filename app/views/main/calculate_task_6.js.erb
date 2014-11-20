@@ -1,0 +1,40 @@
+$(document).ready(function() {
+    $('.chart').remove();
+    var task_chart_id = 'task_chart_pane';
+    $('<div/>', {id: task_chart_id, class: 'chart'}).appendTo($("#buttons_pane"));
+
+    var chart_params = <%= raw @chart_params.to_json %>;
+    var charts = chart_params.charts
+    var task_series = new Array();
+    for (var i = 0; i < charts.length; i++) {
+        task_series[i] = {
+            name: charts[i].name,
+            type: 'spline',
+            tooltip: {
+                valueDecimals: 2,
+                headerFormat: '<span style="font-size: 10px"><b>X:</b> {point.key}</span><br/>'
+            },
+            marker: {
+                enabled: false
+            },
+            pointStart: chart_params.start,
+            pointInterval: charts[i].step,
+            shadow: true,
+            data: charts[i].values
+        }
+    }
+    new Highcharts.Chart({
+        chart: {
+            renderTo: task_chart_id,
+            zoomType: 'y'
+        },
+        title: {text: "10.6"},
+        xAxis: {
+            title: {text: 'x'}
+        },
+        yAxis: {
+            title: {text: 'u(x)'}
+        },
+        series: task_series
+    });
+});

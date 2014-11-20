@@ -73,6 +73,18 @@ class MainController < ApplicationController
     self.fill_array_with_charts(@chart_params[:charts], task_solver, 0.001)
   end
 
+  def calculate_task_6
+    a = 0.5; ua = 1; b = 1.5; ub = 1; l = b - a; step_x = 0.01; step_t = 0.05; max_t = 210 * step_t;
+    kx = ->(x){ 1 / Math.cos(x) }; dkx_dx = ->(x){ 2 * Math.sin(x) / (Math.cos(2 * x) + 1) }
+    f_x_t = ->(x,t){ 5 * Math.sin(x) * (1 - Math.exp(-t)) };
+    phi_x = ->(x) { (ub - ua) * (x - a) / l + ua }
+    solver = MainHelper::ExplicitDifferenceSchemaSolver.new(a,b,ua,ub,step_x,max_t,step_t,phi_x, kx,dkx_dx,f_x_t).calculate!
+    @chart_params = { charts: [], start: a }
+    @chart_params[:charts] << solver.get_nearest_function_values_for_time(step_t,'t')
+    @chart_params[:charts] << solver.get_nearest_function_values_for_time(step_t * 20,'20t')
+    @chart_params[:charts] << solver.get_nearest_function_values_for_time(step_t * 200, '200t')
+  end
+
   protected
   def fill_array_with_charts(array, task_solver, task_precision)
     iteration = 0; previous_result = {}; precision = nil

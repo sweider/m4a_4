@@ -271,9 +271,12 @@ module MainHelper
       array <<  { name: 'Два симметричных разномощных', values: solution_c[:y], step: solution_c[:step] }
     end
   end
+  require 'matrix'
+  class SetableMatrix < Matrix
+    public :'[]=', :set_element, :set_component
+  end
 
   class ExplicitDifferenceSchemaSolver
-
     # @param [Float] a начало области определения по х
     # @param [Float] b конец области определения по х
     # @param [Float] ua левое граничное условие
@@ -289,28 +292,30 @@ module MainHelper
       @start_x = a; @end_x = b; @length_x = b - a; @step_x = step_x; @ua = ua; @ub = ub; @column_count = @length_x / step_x;
       @start_t = 0; @end_t = t_max; @step_t = step_t; @row_count = t_max / step_t
       @phi_x = phi_x; @k_x = k_x; @dk_dx = dk_dx; @f_x_t = f_x_t
-      @u_matrix = Matrix::build(@row_count, @column_count) { |row, col| row == 0 ? phi_x.call(col) : nil }
+      @u_matrix = SetableMatrix::build(@row_count, @column_count) { |row, col| row == 0 ? phi_x.call(col) : nil }
     end
 
     def calculate!
-      (0..@row_count).each do |curr_row|
+      (0..@row_count - 2).each do |curr_row|
         (1..@column_count - 2).each do |curr_column|
           curr_x = get_x(curr_column); curr_t = get_t(curr_row)
-          dux_dx = (@u_matrix[curr_row][curr_column + 1] - @u_matrix[curr_row][curr_column]) / @step_x
-          d2ux_dx2 = (@u_matrix[curr_row][curr_column + 1] - 2 * @u_matrix[curr_row][curr_column] +
-              @u_matrix[curr_row][curr_column - 1]) / @step_x**2
-          @u_matrix[curr_row + 1][curr_column] = @step_t * (@k_x.call(curr_x) * d2ux_dx2 + dux_dx * @dk_dx.call(curr_x) +
-              @f_x_t.call(curr_x, curr_t)) + @u_matrix[curr_row][curr_column]
+          dux_dx = (@u_matrix[curr_row, curr_column + 1] - @u_matrix[curr_row, curr_column]) / @step_x
+          d2ux_dx2 = (@u_matrix[curr_row, curr_column + 1] - 2 * @u_matrix[curr_row, curr_column] +
+              @u_matrix[curr_row, curr_column - 1]) / @step_x**2
+          @u_matrix[curr_row + 1, curr_column] = @step_t * (@k_x.call(curr_x) * d2ux_dx2 + dux_dx * @dk_dx.call(curr_x) +
+              @f_x_t.call(curr_x, curr_t)) + @u_matrix[curr_row, curr_column]
         end
-        @u_matrix[curr_row + 1][0] = @ua
-        @u_matrix[curr_row + 1][@column_count - 1] = @ub
+        @u_matrix[curr_row + 1, 0] = @ua
+        @u_matrix[curr_row + 1, @column_count - 1] = @ub
       end
+      self
     end
 
     # @param [Float] time время, для которого ищем
-    # @return [Hash] возвращает хэш с ключами {values, step}
-    def get_nearest_function_values_for_time(time)
-      { values: @u_matrix.row((time / @step_t).round).to_a, step: @step_x }
+    # @param [String] name имя, которое будет дано графику
+    # @return [Hash] возвращает хэш с ключами {values, step, name}
+    def get_nearest_function_values_for_time(time, name)
+      { values: @u_matrix.row((time / @step_t).round).to_a, step: @step_x, name: name }
     end
 
     def get_x(index)
