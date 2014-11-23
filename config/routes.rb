@@ -7,6 +7,7 @@ Rails.application.routes.draw do
       get 'calculate_task_4'
       get 'calculate_task_5'
       get 'calculate_task_6'
+      get 'calculate_lab_2'
     end
   end
   root 'main#index'

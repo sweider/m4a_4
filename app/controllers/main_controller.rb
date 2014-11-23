@@ -73,16 +73,41 @@ class MainController < ApplicationController
     self.fill_array_with_charts(@chart_params[:charts], task_solver, 0.001)
   end
 
+  def test
+    @exampleChart = { start: 0, end: 1, charts: []}
+    example_exact = MainHelper::Function.new(->(x) { Math.exp(-x) * ((2 * Math.exp(1) - 1) * x + 1) })
+    example_solver = MainHelper::FiniteDifferenceSolver.new( 10, 0, 1, 1, 2, 1, 0 , 1, 0, ->(*x){ 1 }, ->(*x){ 2 }, ->(*x) { 0 } )
+    @exampleChart[:charts] << { values: example_exact.get_values_in_range_with_step(@exampleChart[:start]..@exampleChart[:end], 0.05), name: 'Exact', step: 0.05 }
+    self.fill_array_with_charts(@exampleChart[:charts], example_solver, 0.01)
+  end
+
   def calculate_task_6
     a = 0.5; ua = 1; b = 1.5; ub = 1; l = b - a; step_x = 0.01; step_t = 0.05; max_t = 210 * step_t;
     kx = ->(x){ 1 / Math.cos(x) }; dkx_dx = ->(x){ 2 * Math.sin(x) / (Math.cos(2 * x) + 1) }
-    f_x_t = ->(x,t){ 5 * Math.sin(x) * (1 - Math.exp(-t)) };
+    f_u_x_t = ->(u,x,t){ 5 * Math.sin(x) * (1 - Math.exp(-t)) };
     phi_x = ->(x) { (ub - ua) * (x - a) / l + ua }
-    solver = MainHelper::ExplicitDifferenceSchemaSolver.new(a,b,ua,ub,step_x,max_t,step_t,phi_x, kx,dkx_dx,f_x_t).calculate!
-    @chart_params = { charts: [], start: a }
-    @chart_params[:charts] << solver.get_nearest_function_values_for_time(step_t,'t')
-    @chart_params[:charts] << solver.get_nearest_function_values_for_time(step_t * 20,'20t')
-    @chart_params[:charts] << solver.get_nearest_function_values_for_time(step_t * 200, '200t')
+    alpha_x_t = ->(x,t){ kx.call(x) }; beta_x_t = ->(x,t){ dkx_dx.call(x)}
+    phi1 = ->(t) {1}; phi2 = ->(t){1.5}
+    solver = MainHelper::ExplicitDifferenceSchemaSolver.new(a,b,phi1,phi2,step_x,max_t,step_t, alpha_x_t, beta_x_t, phi_x,f_u_x_t, true).calculate!
+    @chart_params = { explicit_charts: [], start: a }
+    @chart_params[:explicit_charts] << solver.get_nearest_function_values_for_time(step_t,'t')
+    @chart_params[:explicit_charts] << solver.get_nearest_function_values_for_time(step_t * 20,'20t')
+    @chart_params[:explicit_charts] << solver.get_nearest_function_values_for_time(step_t * 200, '200t')
+  end
+
+  def calculate_lab_2
+    a = 0; b = 1; step_x = (b - a).to_f / 10; k = 0.4; t_max = 0.1; t_min = 0; step_t = (t_max - t_min) / 80
+    phi_x = ->(x){x}; g1_t = ->(t){0}; g2_t = ->(t){1}; f_x_t = ->(x,t){1};
+    solver = MainHelper::ImplicitDifferenceSchemaSolver.new(a,b,step_x,t_min,t_max, step_t,k, phi_x, g1_t,g2_t,f_x_t, false).calculate!
+    @chart_params = { impl_charts: [],expl_charts:[], start: a }
+
+    alpha_x_t = ->(x,t) {k}; beta_x_t = ->(x,t){0}; f_u_x_t = ->(u,x,t){ f_x_t.call(x,t) }
+    expl_solver = MainHelper::ExplicitDifferenceSchemaSolver.new(a,b, g1_t,g2_t,step_x,t_max,step_t,alpha_x_t,beta_x_t, phi_x,f_u_x_t, false).calculate!
+
+    (0..80).step(16).each { |i|
+      @chart_params[:impl_charts] << solver.get_nearest_function_values_for_time(i,"#{i}t_i")
+      @chart_params[:impl_charts] << expl_solver.get_nearest_function_values_for_time(i, "#{i}t_e")
+    }
   end
 
   protected

@@ -279,34 +279,36 @@ module MainHelper
   class ExplicitDifferenceSchemaSolver
     # @param [Float] a начало области определения по х
     # @param [Float] b конец области определения по х
-    # @param [Float] ua левое граничное условие
-    # @param [Float] ub правое граничное условие
     # @param [Float] step_x шаг сетки по координате
     # @param [Float] t_max предел по времени
     # @param [Float] step_t шаг сетки по времени
     # @param [Proc] phi_x функция от х, которая в начальном условии
-    # @param [Proc] k_x функция от х, по заданию
-    # @param [Proc] dk_dx производная от k_x, тоже функция от х
-    # @param [Proc] f_x_t ->(x, t)
-    def initialize(a, b, ua, ub, step_x, t_max, step_t, phi_x, k_x, dk_dx, f_x_t )
-      @start_x = a; @end_x = b; @length_x = b - a; @step_x = step_x; @ua = ua; @ub = ub; @column_count = @length_x / step_x;
-      @start_t = 0; @end_t = t_max; @step_t = step_t; @row_count = t_max / step_t
-      @phi_x = phi_x; @k_x = k_x; @dk_dx = dk_dx; @f_x_t = f_x_t
-      @u_matrix = SetableMatrix::build(@row_count, @column_count) { |row, col| row == 0 ? phi_x.call(col) : nil }
+    # @param [Proc] f_u_x_t ->(u, x, t)
+    # @param [Proc] alpha_x_t ->(x,t) -- коэффициент перед d2u_dx2
+    # @param [Proc] beta_x_t  ->(x,t) -- коэффициент перед du_dx
+    # @param [Boolean] is_first использовать условия первого рода
+    def initialize(a, b, phi1, phi2, step_x, t_max, step_t, alpha_x_t, beta_x_t, phi_x, f_u_x_t, is_first )
+      @start_x = a; @end_x = b; @length_x = b - a; @h = step_x; @columns = @length_x / step_x + 1
+      @start_t = 0; @end_t = t_max; @step_t = step_t; @rows = (t_max - @start_t) / step_t; @f_u_x_t = f_u_x_t
+      @u_matrix = SetableMatrix::build(@rows, @columns) { |row, col| row == 0 ? phi_x.call(col * step_x + @start_x) : nil }
+      @left_border = is_first ? ->(n,t){ phi1.call(t) } : ->(n,t){@u_matrix[n,1] - @h * phi1.call(t)}
+      @right_border = is_first ? ->(n,t){ phi2.call(t) } : ->(n,t){@u_matrix[n, @columns - 2] + @h * phi2.call(t)}
+      @beta_x_t = beta_x_t; @alpha_x_t = alpha_x_t
     end
 
+
     def calculate!
-      (0..@row_count - 2).each do |curr_row|
-        (1..@column_count - 2).each do |curr_column|
+      (0..@rows - 2).each do |curr_row|
+        (1..@columns - 2).each do |curr_column|
           curr_x = get_x(curr_column); curr_t = get_t(curr_row)
-          dux_dx = (@u_matrix[curr_row, curr_column + 1] - @u_matrix[curr_row, curr_column]) / @step_x
-          d2ux_dx2 = (@u_matrix[curr_row, curr_column + 1] - 2 * @u_matrix[curr_row, curr_column] +
-              @u_matrix[curr_row, curr_column - 1]) / @step_x**2
-          @u_matrix[curr_row + 1, curr_column] = @step_t * (@k_x.call(curr_x) * d2ux_dx2 + dux_dx * @dk_dx.call(curr_x) +
-              @f_x_t.call(curr_x, curr_t)) + @u_matrix[curr_row, curr_column]
+          curr_u = @u_matrix[curr_row, curr_column]
+          dux_dx = (@u_matrix[curr_row, curr_column + 1] - curr_u) / @h
+          d2ux_dx2 = (@u_matrix[curr_row, curr_column + 1] - 2 * curr_u + @u_matrix[curr_row, curr_column - 1]) / @h**2
+          @u_matrix[curr_row + 1, curr_column] = @step_t * (@alpha_x_t.call(curr_x,curr_t) * d2ux_dx2 +
+              dux_dx * @beta_x_t.call(curr_x, curr_t) + @f_u_x_t.call(curr_u,curr_x, curr_t)) + curr_u
         end
-        @u_matrix[curr_row + 1, 0] = @ua
-        @u_matrix[curr_row + 1, @column_count - 1] = @ub
+        @u_matrix[curr_row + 1, 0] = @left_border.call(curr_row + 1, get_t(curr_row + 1))
+        @u_matrix[curr_row + 1, @columns - 1] = @right_border.call(curr_row + 1, get_t(curr_row + 1))
       end
       self
     end
@@ -315,18 +317,81 @@ module MainHelper
     # @param [String] name имя, которое будет дано графику
     # @return [Hash] возвращает хэш с ключами {values, step, name}
     def get_nearest_function_values_for_time(time, name)
-      { values: @u_matrix.row((time / @step_t).round).to_a, step: @step_x, name: name }
+      { values: @u_matrix.row(time - @step_t).to_a, step: @h, name: name }
+      # { values: @u_matrix.row((time / @step_t).round).to_a, step: @h, name: name }
     end
 
     def get_x(index)
-      @start_x + index * @step_x
+      @start_x + index * @h
     end
 
     def get_t(index)
-      @step_t * index
+      @step_t * index + @start_t
     end
   end
 
+  class ImplicitDifferenceSchemaSolver
+    # @param [Float] k коэффициент перед второй производной в уравнении
+    # @param [Proc] f_x_t ->(x,t){}
+    # @param [Float] min_x нижняя граница по х
+    # @param [Float] max_x верхняя граница по х
+    # @param [Float] step_x шаг сетки по х
+    # @param [Float] min_t нижняя граница по t
+    # @param [Float] max_t верхняя граница по t
+    # @param [Float] step_t шаг сетки по t
+    # @param [Proc] g1_t функция левого граничного условия
+    # @param [Proc] g2_t функция правого граничного условия
+
+    # @param [Object] phi_x
+    # @param [Boolean] first
+    def initialize(min_x, max_x, step_x, min_t, max_t, step_t, k, phi_x, g1_t, g2_t, f_x_t, first)
+      @min_x = min_x; @h = step_x; @min_t = min_t; @step_t = step_t
+      @rows = (max_t - min_t) / step_t; @columns = (max_x - min_x) / step_x + 1
+      @u_matrix = SetableMatrix::build(@rows, @columns) { |row, col| row == 0 ? phi_x.call(min_x + step_x * col) : nil }
+      @f_j_n = ->(n,j){ @u_matrix[n,j] + f_x_t.call(get_x(j), get_t(n)) * step_t }
+      @a_j = @c_j = - k * step_t / step_x**2; @b_j = 1 + 2 * k * step_t / step_x**2
+      @g1_t = g1_t; @g2_t = g2_t
+      @alpha = []; @beta = []
+      @alpha0 = first ? 0 : 1;
+      @beta0 = first ? ->(t){ g1_t.call(t)} : ->(t){ (-1 * @h) * g1_t.call(t) }
+      @u_n = first ? @g2_t : ->(t) {(@h * @g2_t.call(t) + @beta[@columns - 2]) / (1 - @alpha[@columns - 2])}
+    end
+
+
+    def calculate!
+      (0..@rows - 2).each do |row|
+        @alpha[0] = @alpha0 # из граничных условий находим левые значения
+        @beta[0] =  @beta0.call(get_t(row + 1))
+        (1..@columns - 2).each do |col| # здесь вычисляем прогоночные коэффициенты alpha и beta
+          temp = (@b_j + @c_j * @alpha[col - 1])
+          @alpha[col] = - @a_j / temp
+          @beta[col] = (@f_j_n.call(row, col) - @c_j * @beta[col - 1]) / temp
+        end
+        #  находим значение функции справа
+        @u_matrix[row + 1, @columns - 1] = @u_n.call(get_t(row + 1))
+        (@columns.to_i - 2).downto(0) do |curr_col| # собственно вычисляем значения функции
+          @u_matrix[row + 1, curr_col] = @alpha[curr_col] * @u_matrix[row + 1, curr_col + 1] + @beta[curr_col]
+        end
+      end
+      self
+    end
+
+    # @param [Float] time время, для которого ищем
+    # @param [String] name имя, которое будет дано графику
+    # @return [Hash] возвращает хэш с ключами {values, step, name}
+    def get_nearest_function_values_for_time(time, name)
+      { values: @u_matrix.row(time - @step_t).to_a, step: @h, name: name }
+    end
+
+    protected
+    def get_t(index)
+      @min_t + index * @step_t
+    end
+
+    def get_x(index)
+      @min_x + @h * index
+    end
+end
 
   def self.getBiggestDifferenceBetweenArraysElements(arr1, arr2)
     max_diff = 0

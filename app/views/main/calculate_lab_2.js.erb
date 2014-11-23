@@ -1,14 +1,14 @@
 $(document).ready(function() {
     $('.chart').remove();
-    var task_chart_id = 'task_chart_pane';
-    $('<div/>', {id: task_chart_id, class: 'chart'}).appendTo($("#buttons_pane"));
+    var implicit_schema_chart_pane = 'implicit_schema_chart_pane';
+    $('<div/>', {id: implicit_schema_chart_pane, class: 'chart'}).appendTo($("#buttons_pane"));
 
     var chart_params = <%= raw @chart_params.to_json %>;
-    var explicit_charts = chart_params.explicit_charts
+    var impl_charts = chart_params.impl_charts
     var task_series = new Array();
-    for (var i = 0; i < explicit_charts.length; i++) {
+    for (var i = 0; i < impl_charts.length; i++) {
         task_series[i] = {
-            name: explicit_charts[i].name,
+            name: impl_charts[i].name,
             type: 'spline',
             tooltip: {
                 valueDecimals: 2,
@@ -18,17 +18,17 @@ $(document).ready(function() {
                 enabled: false
             },
             pointStart: chart_params.start,
-            pointInterval: explicit_charts[i].step,
+            pointInterval: impl_charts[i].step,
             shadow: true,
-            data: explicit_charts[i].values
+            data: impl_charts[i].values
         }
     }
     new Highcharts.Chart({
         chart: {
-            renderTo: task_chart_id,
+            renderTo: implicit_schema_chart_pane,
             zoomType: 'y'
         },
-        title: {text: "10.6"},
+        title: {text: "=)"},
         xAxis: {
             title: {text: 'x'}
         },
